@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventBooker - Пользователь</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .nav {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+        }
+        .nav a {
+            margin-right: 15px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .events-list {
+            display: grid;
+            gap: 15px;
+        }
+        .event-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .event-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .event-info {
+            margin: 10px 0;
+            color: #666;
+        }
+        .event-actions {
+            margin-top: 15px;
+        }
+        button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-book {
+            background: #28a745;
+            color: white;
+        }
+        .btn-book:hover {
+            background: #218838;
+        }
+        .btn-confirm {
+            background: #007bff;
+            color: white;
+        }
+        .btn-confirm:hover {
+            background: #0056b3;
+        }
+        .status-free {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-full {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .timer {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .timer.expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .booking-info {
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .booking-cancelled {
+            padding: 10px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">Пользователь</a>
+        <a href="/admin">Администратор</a>
+    </div>
+
+    <h1>Доступные мероприятия</h1>
+    
+    <div id="message"></div>
+    <div id="events" class="events-list"></div>
+
+    <script>
+        let userId = localStorage.getItem('userId') || 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
+        let timers = {};
+
+        function showMessage(text, type = 'success') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = 'message ' + type;
+            msgDiv.textContent = text;
+            setTimeout(() => msgDiv.textContent = '', 5000);
+        }
+
+        function getMyBookings() {
+            return JSON.parse(localStorage.getItem('bookings') || '[]');
+        }
+
+        function saveBooking(bookingId, eventId) {
+            const bookings = getMyBookings();
+            bookings.push({ 
+                bookingId: bookingId, 
+                eventId: eventId, 
+                time: Date.now(),
+                confirmed: false,
+                cancelled: false
+            });
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+        }
+
+        function confirmBooking(bookingId) {
+            const bookings = getMyBookings();
+            const booking = bookings.find(b => b.bookingId === bookingId);
+            if (booking) {
+                booking.confirmed = true;
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+            }
+        }
+
+        function cancelBooking(bookingId) {
+            const bookings = getMyBookings();
+            const booking = bookings.find(b => b.bookingId === bookingId);
+            if (booking) {
+                booking.cancelled = true;
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+            }
+        }
+
+        function getBookingForEvent(eventId) {
+            const bookings = getMyBookings();
+            return bookings.find(b => b.eventId === eventId && !b.cancelled);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer(bookingId, eventId, startTime) {
+            const BOOKING_DURATION = 1 * 60 * 1000; // 15 минут
+            
+            if (timers[bookingId]) {
+                clearInterval(timers[bookingId]);
+            }
+
+            timers[bookingId] = setInterval(async () => {
+                const elapsed = Date.now() - startTime;
+                const remaining = BOOKING_DURATION - elapsed;
+
+                const timerElement = document.getElementById(`timer-${eventId}`);
+                if (!timerElement) {
+                    clearInterval(timers[bookingId]);
+                    return;
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(timers[bookingId]);
+                    timerElement.textContent = 'Время истекло';
+                    timerElement.className = 'timer expired';
+                    
+                    // Проверяем статус брони на сервере
+                    await checkBookingStatus(bookingId);
+                    setTimeout(loadEvents, 1000);
+                } else {
+                    const seconds = Math.floor(remaining / 1000);
+                    timerElement.textContent = `Осталось: ${formatTime(seconds)}`;
+                }
+            }, 1000);
+        }
+
+        async function checkBookingStatus(bookingId) {
+            try {
+                const response = await fetch(`/api/bookings/${bookingId}`);
+                if (response.ok) {
+                    const booking = await response.json();
+                    if (booking.Status === 'cancelled') {
+                        cancelBooking(bookingId);
+                        showMessage('Бронь отменена (не оплачена вовремя)', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking booking status:', error);
+            }
+        }
+
+        async function loadEvents() {
+            try {
+                const response = await fetch('/api/events');
+                const events = await response.json();
+                
+                const eventsDiv = document.getElementById('events');
+                if (events.length === 0) {
+                    eventsDiv.innerHTML = '<p>Нет доступных мероприятий</p>';
+                    return;
+                }
+
+                eventsDiv.innerHTML = events.map(event => {
+                    const booking = getBookingForEvent(event.Id);
+                    const hasBooking = booking && !booking.confirmed && !booking.cancelled;
+                    const isConfirmed = booking && booking.confirmed;
+                    const isCancelled = booking && booking.cancelled;
+                    
+                    // Запускаем таймер для активных броней
+                    if (hasBooking) {
+                        setTimeout(() => startTimer(booking.bookingId, event.Id, booking.time), 100);
+                    }
+                    
+                    return `
+                        <div class="event-card">
+                            <h3>${event.Name}</h3>
+                            <div class="event-info">
+                                <p>${event.Description}</p>
+                                <p><strong>Дата:</strong> ${new Date(event.Date).toLocaleString('ru-RU')}</p>
+                                <p><strong>Цена:</strong> ${event.IsFree ? 'Бесплатно' : event.Price + ' руб.'}</p>
+                                <p class="${event.AvailableTickets > 0 ? 'status-free' : 'status-full'}">
+                                    Свободных мест: ${event.AvailableTickets}
+                                </p>
+                                ${hasBooking ? `
+                                    <div class="booking-info">
+                                        <p style="margin: 5px 0;"><strong>У вас есть бронь!</strong></p>
+                                        <p style="margin: 5px 0;">ID: ${booking.bookingId}</p>
+                                        <span id="timer-${event.Id}" class="timer">Загрузка...</span>
+                                    </div>
+                                ` : ''}
+                                ${isConfirmed ? `<p style="color: #28a745; font-weight: bold;">✓ Бронь оплачена</p>` : ''}
+                                ${isCancelled ? `<div class="booking-cancelled">Бронь отменена</div>` : ''}
+                            </div>
+                            <div class="event-actions">
+                                ${!hasBooking && !isConfirmed && !isCancelled && event.AvailableTickets > 0 ? `
+                                    <button class="btn-book" onclick="bookEvent('${event.Id}')">Забронировать</button>
+                                ` : ''}
+                                ${hasBooking && !isConfirmed ? `
+                                    <button class="btn-confirm" onclick="confirmPayment('${event.Id}', '${booking.bookingId}')">Оплатить</button>
+                                ` : ''}
+                                ${!hasBooking && !isConfirmed && !isCancelled && event.AvailableTickets === 0 ? 
+                                    '<span style="color: #dc3545;">Мест нет</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                showMessage('Ошибка загрузки мероприятий: ' + error.message, 'error');
+            }
+        }
+
+        async function bookEvent(eventId) {
+            try {
+                const response = await fetch(`/api/events/${eventId}/book`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка бронирования');
+                }
+
+                const data = await response.json();
+                showMessage(`Место забронировано! ID брони: ${data.booking_id}. Оплатите бронь в течение 15 минут.`);
+                
+                saveBooking(data.booking_id, eventId);
+                
+                setTimeout(loadEvents, 500);
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function confirmPayment(eventId, bookingId) {
+            try {
+                const response = await fetch(`/api/bookings/${bookingId}/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка оплаты');
+                }
+
+                showMessage('Бронь успешно оплачена!');
+                confirmBooking(bookingId);
+                
+                if (timers[bookingId]) {
+                    clearInterval(timers[bookingId]);
+                }
+                
+                setTimeout(loadEvents, 500);
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Проверяем статус всех активных броней при загрузке
+        async function checkAllBookings() {
+            const bookings = getMyBookings();
+            for (const booking of bookings) {
+                if (!booking.confirmed && !booking.cancelled) {
+                    await checkBookingStatus(booking.bookingId);
+                }
+            }
+        }
+
+        // Загружаем мероприятия при загрузке страницы
+        checkAllBookings().then(() => loadEvents());
+        
+        // Обновляем список каждые 5 секунд
+        setInterval(() => {
+            checkAllBookings().then(() => loadEvents());
+        }, 5000);
+    </script>
+</body>
+</html>
