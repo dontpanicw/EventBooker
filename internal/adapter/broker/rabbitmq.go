@@ -171,6 +171,7 @@ func (b *RabbitMQBroker) PublishDelayedCancellation(ctx context.Context, booking
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
+	///
 
 	// Публикуем в waiting queue, откуда сообщение попадет в delayed queue через 15 минут
 	err = b.channel.PublishWithContext(
