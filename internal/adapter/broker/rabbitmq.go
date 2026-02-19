@@ -156,31 +156,6 @@ func (b *RabbitMQBroker) setupQueues() error {
 		return fmt.Errorf("failed to bind delayed queue: %w", err)
 	}
 
-	// Declare confirmations queue
-	//_, err = b.channel.QueueDeclare(
-	//	ConfirmationsQueue,
-	//	true,
-	//	false,
-	//	false,
-	//	false,
-	//	nil,
-	//)
-	//if err != nil {
-	//	return fmt.Errorf("failed to declare confirmations queue: %w", err)
-	//}
-	//
-	//// Bind confirmations queue to exchange
-	//err = b.channel.QueueBind(
-	//	ConfirmationsQueue,
-	//	ConfirmationsQueue,
-	//	ConfirmationsExchange,
-	//	false,
-	//	nil,
-	//)
-	//if err != nil {
-	//	return fmt.Errorf("failed to bind confirmations queue: %w", err)
-	//}
-
 	return nil
 }
 
@@ -216,37 +191,6 @@ func (b *RabbitMQBroker) PublishDelayedCancellation(ctx context.Context, booking
 	log.Printf("Published delayed cancellation for booking %s (will be processed in 15 minutes)", booking.Id)
 	return nil
 }
-
-//func (b *RabbitMQBroker) PublishConfirmation(ctx context.Context, bookingID, eventID string) error {
-//	msg := BookingMessage{
-//		BookingID: bookingID,
-//		EventID:   eventID,
-//		Timestamp: time.Now(),
-//	}
-//
-//	body, err := json.Marshal(msg)
-//	if err != nil {
-//		return fmt.Errorf("failed to marshal message: %w", err)
-//	}
-//
-//	err = b.channel.PublishWithContext(
-//		ctx,
-//		ConfirmationsExchange,
-//		ConfirmationsQueue,
-//		false,
-//		false,
-//		amqp.Publishing{
-//			ContentType: "application/json",
-//			Body:        body,
-//		},
-//	)
-//	if err != nil {
-//		return fmt.Errorf("failed to publish confirmation: %w", err)
-//	}
-//
-//	log.Printf("Published confirmation for booking %s", bookingID)
-//	return nil
-//}
 
 func (b *RabbitMQBroker) Close() error {
 	if b.channel != nil {

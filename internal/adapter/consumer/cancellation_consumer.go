@@ -77,7 +77,6 @@ func (c *CancellationConsumer) handleMessage(ctx context.Context, msg amqp.Deliv
 	}
 
 	// Проверяем статус
-	log.Printf(booking.Status)
 	if booking.Status == domain.PendingStatus {
 		// Отменяем бронь и возвращаем место
 		log.Printf("Cancelling booking %s (not paid in time)", bookingMsg.BookingID)

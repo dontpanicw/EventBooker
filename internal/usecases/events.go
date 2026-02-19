@@ -3,7 +3,6 @@ package usecases
 import (
 	"context"
 	"fmt"
-	"github.com/dontpanicw/EventBooker/internal/adapter/broker"
 	"github.com/dontpanicw/EventBooker/internal/domain"
 	"github.com/dontpanicw/EventBooker/internal/port"
 	"github.com/google/uuid"
@@ -12,10 +11,10 @@ import (
 
 type EventsUsecases struct {
 	repo   port.Repository
-	broker *broker.RabbitMQBroker
+	broker port.Broker
 }
 
-func NewEventsUsecases(repo port.Repository, rabbitBroker *broker.RabbitMQBroker) port.Usecases {
+func NewEventsUsecases(repo port.Repository, rabbitBroker port.Broker) port.Usecases {
 	return &EventsUsecases{
 		repo:   repo,
 		broker: rabbitBroker,
@@ -104,11 +103,5 @@ func (e *EventsUsecases) ConfirmBooking(ctx context.Context, bookingID string) e
 	if err != nil {
 		return fmt.Errorf("failed to confirm booking: %w", err)
 	}
-	//
-	//// Публикуем сообщение о подтверждении
-	//if err := e.broker.PublishConfirmation(ctx, bookingID, booking.EventId); err != nil {
-	//	return fmt.Errorf("failed to publish confirmation: %w", err)
-	//}
-
 	return nil
 }

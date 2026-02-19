@@ -70,12 +70,6 @@ func Start(cfg *config.Config) error {
 	}
 	log.Print("Cancellation consumer started")
 
-	//confirmationConsumer := consumer.NewConfirmationConsumer(rabbitBroker.GetChannel())
-	//if err := confirmationConsumer.Start(ctx); err != nil {
-	//	return fmt.Errorf("failed to start confirmation consumer: %w", err)
-	//}
-	//log.Print("Confirmation consumer started")
-
 	imageUsecase := usecases.NewEventsUsecases(imageRepo, rabbitBroker)
 
 	srv := http.NewServer(cfg.HTTPPort, imageUsecase)

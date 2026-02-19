@@ -73,7 +73,7 @@ func (e *EventRepository) BookEvent(ctx context.Context, booking *domain.Booking
 	defer func() {
 		err = tx.Rollback()
 		if err != nil {
-			log.Printf("failed to rollback transaction: %w", err)
+			log.Printf("failed to rollback transaction: %v", err)
 		}
 	}() // Будет отменен, если не закоммитим
 
@@ -146,7 +146,7 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*domain.Event, er
 	defer func() {
 		err = rows.Close()
 		if err != nil {
-			log.Printf("error closing rows: %w", err)
+			log.Printf("error closing rows: %v", err)
 		}
 	}()
 

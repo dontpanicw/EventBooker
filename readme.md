@@ -200,6 +200,57 @@ GET /api/bookings/{id}
 - Мониторинг свободных мест
 - Автообновление списка каждые 5 секунд
 
+## Тестирование
+
+### Запуск тестов
+
+```bash
+# Все тесты
+make test
+
+# Тесты с покрытием
+make test-coverage
+
+# Unit тесты
+make test-unit
+
+# Тесты с race detector
+make test-race
+```
+
+### Структура тестов
+
+```
+internal/
+├── usecases/
+│   └── events_test.go          # Тесты бизнес-логики
+├── input/http/
+│   └── handlers_test.go        # Тесты HTTP handlers
+├── adapter/consumer/
+│   ├── cancellation_consumer_test.go
+│   └── confirmation_consumer_test.go
+└── domain/
+    └── event_test.go           # Тесты доменных моделей
+```
+
+### Покрытие кода
+
+Тесты покрывают:
+- ✅ Usecases (бизнес-логика)
+- ✅ HTTP Handlers
+- ✅ Domain models
+- ✅ RabbitMQ consumers
+- ✅ Обработка ошибок
+- ✅ Валидация данных
+
+### CI/CD
+
+GitHub Actions автоматически запускает тесты при каждом push и pull request:
+- Запуск всех тестов
+- Проверка race conditions
+- Генерация отчета о покрытии
+- Линтинг кода
+
 ## Мониторинг
 
 ### RabbitMQ Management UI
