@@ -266,11 +266,6 @@ GitHub Actions автоматически запускает тесты при �
 - Статус consumers
 - Dead letter messages
 
-## Контакты
-
-- GitHub: [@dontpanicw](https://github.com/dontpanicw)
-- Email: your-email@example.com
-
 ## Roadmap
 
 - [ ] Добавить аутентификацию пользователей
